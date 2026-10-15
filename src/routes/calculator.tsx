@@ -66,7 +66,7 @@ function CalculatorPage() {
 
   function compute(e?: FormEvent) {
     e?.preventDefault();
-    const errs = validateSiteInputs(f as unknown as Record<string, string>);
+    const errs = validateSiteInputs(f);
     setErrors(errs);
     if (Object.keys(errs).length) {
       setResult(null);
@@ -215,7 +215,7 @@ function CalculatorPage() {
   );
 }
 
-function Field({ id, label, error, children, className }: { id: string; label: string; error?: string; children: React.ReactNode; className?: string }) {
+function Field({ id, label, error, children, className }: { id: string; label: string; error?: string | undefined; children: React.ReactNode; className?: string }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label htmlFor={id}>{label}</Label>

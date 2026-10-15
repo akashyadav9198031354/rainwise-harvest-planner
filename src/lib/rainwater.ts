@@ -13,8 +13,8 @@ export type SiteProfile = {
   runoffCoefficient: number;
   intendedUse: IntendedUse;
   storageDays: number;
-  storageSpace?: string;
-  existingSystem?: string;
+  storageSpace?: string | undefined;
+  existingSystem?: string | undefined;
   createdAt: string;
   updatedAt: string;
 };
@@ -34,7 +34,7 @@ export type ImpactRecord = {
   date: string;
   actualCollectedLitres: number;
   actualReusedLitres: number;
-  notes?: string;
+  notes?: string | undefined;
   isDemoData: boolean;
   createdAt: string;
 };
@@ -44,7 +44,7 @@ export type MaintenanceItem = {
   title: string;
   description: string;
   completed: boolean;
-  completedAt?: string;
+  completedAt?: string | undefined;
 };
 
 export const SURFACE_COEFFICIENTS: Record<SurfaceType, { label: string; value: number }> = {
@@ -107,7 +107,9 @@ export function buildEstimate(p: Pick<SiteProfile, "annualRainfallMm" | "catchme
 
 export type FormErrors = Partial<Record<"name" | "location" | "annualRainfallMm" | "catchmentAreaM2" | "runoffCoefficient" | "storageDays", string>>;
 
-export function validateSiteInputs(v: Record<string, string>): FormErrors {
+export type SiteInputStrings = { name: string; location: string; annualRainfallMm: string; catchmentAreaM2: string; runoffCoefficient: string; storageDays: string };
+
+export function validateSiteInputs(v: SiteInputStrings): FormErrors {
   const e: FormErrors = {};
   const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
   if (!v.name?.trim()) e.name = "Give this site a name.";
