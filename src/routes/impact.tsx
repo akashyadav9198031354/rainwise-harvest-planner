@@ -82,8 +82,8 @@ function Impact() {
   function loadDemo() {
     const y = new Date().getFullYear() - 1;
     const demo: ImpactRecord[] = [6, 7, 8, 9].map((m, i) => ({
-      id: uid(), siteId: active!.id, date: `${y}-0${m}-15`, actualCollectedLitres: [4200, 9800, 8600, 3100][i],
-      actualReusedLitres: [3500, 7200, 7900, 3400][i], notes: "Demo data — not a real measurement", isDemoData: true,
+      id: uid(), siteId: active!.id, date: `${y}-0${m}-15`, actualCollectedLitres: [4200, 9800, 8600, 3100][i]!,
+      actualReusedLitres: [3500, 7200, 7900, 3400][i]!, notes: "Demo data — not a real measurement", isDemoData: true,
       createdAt: new Date().toISOString(),
     }));
     addMany(demo);
