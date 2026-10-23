@@ -53,8 +53,8 @@
   --color-chart-5: var(--chart-5);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
-  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: "Public Sans", "Noto Sans Devanagari", system-ui, sans-serif;
   --shadow-soft: var(--shadow-soft);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
