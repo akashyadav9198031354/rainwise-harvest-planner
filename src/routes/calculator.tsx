@@ -10,6 +10,7 @@ import {
   buildEstimate, fmtL, fmtL2, SITE_TYPES, SURFACE_COEFFICIENTS, USES, validateSiteInputs,
   type FormErrors, type IntendedUse, type RainwaterEstimate, type SiteType, type SurfaceType,
 } from "@/lib/rainwater";
+import { ASSUMPTIONS_HI, SITE_TYPES_HI, SURFACE_HI, USES_HI, useLang } from "@/lib/i18n";
 import { uid, useSites } from "@/lib/store";
 
 export const Route = createFileRoute("/calculator")({
@@ -40,6 +41,7 @@ const selectCls = "h-9 w-full rounded-md border border-input bg-background px-3 
 
 function CalculatorPage() {
   const { sites, active, save, setActive, ready } = useSites();
+  const { t, err, pick } = useLang();
   const [f, setF] = useState<FormState>(blank);
   const [errors, setErrors] = useState<FormErrors>({});
   const [result, setResult] = useState<RainwaterEstimate | null>(null);
@@ -93,83 +95,85 @@ function CalculatorPage() {
       existingSystem: f.existingSystem.trim().slice(0, 200), createdAt: existing?.createdAt ?? now, updatedAt: now,
     });
     setF((p) => ({ ...p, id }));
-    if (ok) toast.success("Site profile saved in this browser");
-    else toast.error("Couldn't save — browser storage is unavailable. You can keep using the calculator.");
+    if (ok) toast.success(t("toast.saveOk"));
+    else toast.error(t("toast.saveErr"));
   }
+
+  const surfaceLabel = (k: SurfaceType) => pick(SURFACE_COEFFICIENTS[k].label, SURFACE_HI[k] ?? SURFACE_COEFFICIENTS[k].label);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <PageHeader eyebrow="Step 1" title="Rainwater potential calculator">
-        Enter your site details. You supply the annual rainfall — check your local meteorological department for an average.
+      <PageHeader eyebrow={t("calc.step")} title={t("calc.title")}>
+        {t("calc.sub")}
       </PageHeader>
 
       {sites.length > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Saved sites:</span>
+          <span className="text-muted-foreground">{t("calc.savedSites")}</span>
           {sites.map((s) => (
             <Button key={s.id} size="sm" variant={s.id === f.id ? "default" : "outline"} onClick={() => load(s.id)}>{s.name}</Button>
           ))}
-          <Button size="sm" variant="ghost" onClick={() => { setF(blank); setResult(null); setErrors({}); }}>+ New site</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setF(blank); setResult(null); setErrors({}); }}>{t("calc.newSite")}</Button>
         </div>
       )}
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         <form onSubmit={compute} noValidate className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-soft">
           <fieldset className="grid gap-4 sm:grid-cols-2">
-            <legend className="mb-2 font-display text-lg font-semibold">Site profile</legend>
-            <Field id="name" label="Site name" error={errors.name}>
-              <Input id="name" value={f.name} maxLength={80} placeholder="e.g. Green Valley School" onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} aria-describedby="name-err" />
+            <legend className="mb-2 font-display text-lg font-semibold">{t("calc.legendProfile")}</legend>
+            <Field id="name" label={t("calc.name")} error={errors.name ? err(errors.name) : undefined}>
+              <Input id="name" value={f.name} maxLength={80} placeholder={t("calc.phName")} onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} aria-describedby="name-err" />
             </Field>
-            <Field id="location" label="City or location" error={errors.location}>
-              <Input id="location" value={f.location} maxLength={100} placeholder="e.g. Pune" onChange={(e) => set("location", e.target.value)} aria-invalid={!!errors.location} aria-describedby="location-err" />
+            <Field id="location" label={t("calc.location")} error={errors.location ? err(errors.location) : undefined}>
+              <Input id="location" value={f.location} maxLength={100} placeholder={t("calc.phLocation")} onChange={(e) => set("location", e.target.value)} aria-invalid={!!errors.location} aria-describedby="location-err" />
             </Field>
-            <Field id="siteType" label="Building / site type">
+            <Field id="siteType" label={t("calc.siteType")}>
               <select id="siteType" className={selectCls} value={f.siteType} onChange={(e) => set("siteType", e.target.value as SiteType)}>
-                {Object.entries(SITE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {Object.entries(SITE_TYPES).map(([k, v]) => <option key={k} value={k}>{pick(v, SITE_TYPES_HI[k] ?? v)}</option>)}
               </select>
             </Field>
-            <Field id="storageSpace" label="Space available for storage (optional)">
-              <Input id="storageSpace" value={f.storageSpace} maxLength={200} placeholder="e.g. 2 m × 1.5 m beside garage" onChange={(e) => set("storageSpace", e.target.value)} />
+            <Field id="storageSpace" label={t("calc.storageSpace")}>
+              <Input id="storageSpace" value={f.storageSpace} maxLength={200} placeholder={t("calc.phStorage")} onChange={(e) => set("storageSpace", e.target.value)} />
             </Field>
-            <Field id="existingSystem" label="Existing rainwater system (optional)" className="sm:col-span-2">
-              <Input id="existingSystem" value={f.existingSystem} maxLength={200} placeholder="e.g. none / 500 L barrel on one downpipe" onChange={(e) => set("existingSystem", e.target.value)} />
+            <Field id="existingSystem" label={t("calc.existingSystem")} className="sm:col-span-2">
+              <Input id="existingSystem" value={f.existingSystem} maxLength={200} placeholder={t("calc.phExisting")} onChange={(e) => set("existingSystem", e.target.value)} />
             </Field>
           </fieldset>
 
           <fieldset className="grid gap-4 sm:grid-cols-2">
-            <legend className="mb-2 font-display text-lg font-semibold">Rain & catchment</legend>
-            <Field id="annualRainfallMm" label="Annual rainfall (mm)" error={errors.annualRainfallMm}>
-              <Input id="annualRainfallMm" type="number" inputMode="decimal" min={0} value={f.annualRainfallMm} placeholder="e.g. 800" onChange={(e) => set("annualRainfallMm", e.target.value)} aria-invalid={!!errors.annualRainfallMm} aria-describedby="annualRainfallMm-err" />
+            <legend className="mb-2 font-display text-lg font-semibold">{t("calc.legendRain")}</legend>
+            <Field id="annualRainfallMm" label={t("calc.rainfall")} error={errors.annualRainfallMm ? err(errors.annualRainfallMm) : undefined}>
+              <Input id="annualRainfallMm" type="number" inputMode="decimal" min={0} value={f.annualRainfallMm} placeholder={t("calc.phRainfall")} onChange={(e) => set("annualRainfallMm", e.target.value)} aria-invalid={!!errors.annualRainfallMm} aria-describedby="annualRainfallMm-err" />
             </Field>
-            <Field id="catchmentAreaM2" label="Roof / catchment area (m²)" error={errors.catchmentAreaM2}>
-              <Input id="catchmentAreaM2" type="number" inputMode="decimal" min={0} value={f.catchmentAreaM2} placeholder="e.g. 100" onChange={(e) => set("catchmentAreaM2", e.target.value)} aria-invalid={!!errors.catchmentAreaM2} aria-describedby="catchmentAreaM2-err" />
+            <Field id="catchmentAreaM2" label={t("calc.area")} error={errors.catchmentAreaM2 ? err(errors.catchmentAreaM2) : undefined}>
+              <Input id="catchmentAreaM2" type="number" inputMode="decimal" min={0} value={f.catchmentAreaM2} placeholder={t("calc.phArea")} onChange={(e) => set("catchmentAreaM2", e.target.value)} aria-invalid={!!errors.catchmentAreaM2} aria-describedby="catchmentAreaM2-err" />
             </Field>
-            <Field id="surfaceType" label="Surface type">
+            <Field id="surfaceType" label={t("calc.surface")}>
               <select id="surfaceType" className={selectCls} value={f.surfaceType}
                 onChange={(e) => { const s = e.target.value as SurfaceType; setF((p) => ({ ...p, surfaceType: s, runoffCoefficient: String(SURFACE_COEFFICIENTS[s].value) })); }}>
-                {Object.entries(SURFACE_COEFFICIENTS).map(([k, v]) => <option key={k} value={k}>{v.label} (≈{v.value})</option>)}
+                {Object.entries(SURFACE_COEFFICIENTS).map(([k, v]) => <option key={k} value={k}>{surfaceLabel(k as SurfaceType)} (≈{v.value})</option>)}
               </select>
             </Field>
-            <Field id="runoffCoefficient" label="Runoff coefficient (0–1, editable)" error={errors.runoffCoefficient}>
+            <Field id="runoffCoefficient" label={t("calc.runoff")} error={errors.runoffCoefficient ? err(errors.runoffCoefficient) : undefined}>
               <Input id="runoffCoefficient" type="number" step="0.05" min={0} max={1} value={f.runoffCoefficient} onChange={(e) => set("runoffCoefficient", e.target.value)} aria-invalid={!!errors.runoffCoefficient} aria-describedby="runoffCoefficient-err" />
             </Field>
           </fieldset>
 
           <fieldset className="grid gap-4 sm:grid-cols-2">
-            <legend className="mb-2 font-display text-lg font-semibold">Use & storage</legend>
-            <Field id="intendedUse" label="Intended use">
+            <legend className="mb-2 font-display text-lg font-semibold">{t("calc.legendUse")}</legend>
+            <Field id="intendedUse" label={t("calc.use")}>
               <select id="intendedUse" className={selectCls} value={f.intendedUse} onChange={(e) => set("intendedUse", e.target.value as IntendedUse)}>
-                {Object.entries(USES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {Object.entries(USES).map(([k, v]) => <option key={k} value={k}>{pick(v, USES_HI[k] ?? v)}</option>)}
               </select>
             </Field>
-            <Field id="storageDays" label="Days of storage desired" error={errors.storageDays}>
+            <Field id="storageDays" label={t("calc.days")} error={errors.storageDays ? err(errors.storageDays) : undefined}>
               <Input id="storageDays" type="number" min={1} max={120} value={f.storageDays} onChange={(e) => set("storageDays", e.target.value)} aria-invalid={!!errors.storageDays} aria-describedby="storageDays-err" />
             </Field>
           </fieldset>
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit"><CalcIcon className="mr-1 h-4 w-4" />Calculate estimate</Button>
-            <Button type="button" variant="outline" onClick={saveSite}><Save className="mr-1 h-4 w-4" />Save site profile</Button>
+            <Button type="submit"><CalcIcon className="mr-1 h-4 w-4" />{t("calc.calculate")}</Button>
+            <Button type="button" variant="outline" onClick={saveSite}><Save className="mr-1 h-4 w-4" />{t("calc.save")}</Button>
           </div>
         </form>
 
@@ -178,34 +182,34 @@ function CalculatorPage() {
             <div className="grid h-full min-h-64 place-items-center rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">
               <div>
                 <Droplet className="mx-auto h-8 w-8 text-primary" aria-hidden />
-                <p className="mt-3">Fill in the form and press <strong>Calculate estimate</strong> to see results.</p>
+                <p className="mt-3">{t("calc.emptyPre")}<strong>{t("calc.emptyStrong")}</strong>{t("calc.emptyPost")}</p>
               </div>
             </div>
           ) : (
             <>
-              <MetricCard label="Estimated annual harvest" value={`${fmtL(result.annualHarvestLitres)}/yr`} hint={`≈ ${(result.annualHarvestLitres / 1000).toLocaleString("en-IN", { maximumFractionDigits: 1 })} m³ per year`} />
+              <MetricCard label={t("calc.annual")} value={`${fmtL(result.annualHarvestLitres)}/yr`} hint={t("calc.m3hint", { m3: (result.annualHarvestLitres / 1000).toLocaleString("en-IN", { maximumFractionDigits: 1 }) })} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <MetricCard label="Average daily harvest" value={`${fmtL2(result.averageDailyLitres)}/day`} hint="Annual ÷ 365" />
-                <MetricCard label="Preliminary storage" value={fmtL(result.preliminaryTankLitres)} hint={`Planning estimate for ${f.storageDays} day(s)`} />
+                <MetricCard label={t("calc.daily")} value={`${fmtL2(result.averageDailyLitres)}/day`} hint={t("calc.dailyHint")} />
+                <MetricCard label={t("calc.prelim")} value={fmtL(result.preliminaryTankLitres)} hint={t("calc.prelimHint", { days: f.storageDays })} />
               </div>
               <div className="rounded-2xl border border-border bg-card p-5 text-sm shadow-soft">
-                <p className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-primary" aria-hidden />Formula & assumptions</p>
+                <p className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-primary" aria-hidden />{t("calc.formulaTitle")}</p>
                 <p className="mt-2 rounded-md bg-secondary px-3 py-2 font-mono text-xs">
-                  {f.annualRainfallMm} mm × {f.catchmentAreaM2} m² × {result.runoffCoefficientUsed} ({SURFACE_COEFFICIENTS[f.surfaceType].label}) = {fmtL(result.annualHarvestLitres)}
+                  {f.annualRainfallMm} mm × {f.catchmentAreaM2} m² × {result.runoffCoefficientUsed} ({surfaceLabel(f.surfaceType)}) = {fmtL(result.annualHarvestLitres)}
                 </p>
                 <p className="mt-1 rounded-md bg-secondary px-3 py-2 font-mono text-xs">
-                  {fmtL2(result.averageDailyLitres)}/day × {f.storageDays} days = {fmtL(result.preliminaryTankLitres)}
+                  {fmtL2(result.averageDailyLitres)}/day × {f.storageDays} = {fmtL(result.preliminaryTankLitres)}
                 </p>
                 <ul className="mt-3 list-disc space-y-1 pl-5 text-muted-foreground">
-                  {result.assumptions.map((a) => <li key={a}>{a}</li>)}
+                  {result.assumptions.map((a) => <li key={a}>{pick(a, ASSUMPTIONS_HI[a] ?? a)}</li>)}
                 </ul>
               </div>
-              <SafetyNotice title="Planning estimate only">
-                Real tank sizing depends on rainfall distribution, demand, space, overflow, tank turnover and engineering requirements.
+              <SafetyNotice title={t("calc.planningTitle")}>
+                {t("calc.planningText")}
               </SafetyNotice>
               <div className="flex flex-wrap gap-3">
-                <Button asChild><Link to="/recommendations">View recommendations</Link></Button>
-                <Button variant="outline" onClick={saveSite}><Save className="mr-1 h-4 w-4" />Save site profile</Button>
+                <Button asChild><Link to="/recommendations">{t("calc.viewRecs")}</Link></Button>
+                <Button variant="outline" onClick={saveSite}><Save className="mr-1 h-4 w-4" />{t("calc.save")}</Button>
               </div>
             </>
           )}
